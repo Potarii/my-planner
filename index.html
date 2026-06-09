@@ -1162,6 +1162,11 @@ function renderWork(){
   const done=works.filter(w=>w.done);
   const filtered=wkFilter==='all'?active:active.filter(w=>w.cat===wkFilter);
 
+  function wkCatOptions(selected){
+    return Object.entries(WK_CAT).map(function(e){
+      return '<option value="'+e[0]+'"'+(selected===e[0]?' selected':'')+'>'+e[1]+'</option>';
+    }).join('');
+  }
   function wkCard(w){
     const cd=wkCountdown(w),timeStr=w.time?' '+w.time:'';
     const isEdit=editingWkId===w.id;
@@ -1177,7 +1182,7 @@ function renderWork(){
           <div class="wk-meta" style="margin-top:3px">
             <span class="dl-date">📅 ${fmtDate(w.date)}${timeStr}</span>
           </div>
-          ${w.note?`<div class="wk-note">${esc(w.note)}</div>`:''}
+          ${w.note?'<div class="wk-note">'+esc(w.note)+'</div>':''}
         </div>
         <div class="dl-actions">
           <button class="edit-btn" onclick="startEditWk(${w.id})" title="編集">✏️</button>
@@ -1191,7 +1196,7 @@ function renderWork(){
           </div>
           <div style="flex:1"><div class="ilabel">カテゴリ</div>
             <select id="wkef-cat-${w.id}" class="iinput" style="padding:9px 8px">
-              ${Object.entries(WK_CAT).map(([k,v])=>`<option value="${k}" ${w.cat===k?'selected':''}>${v}</option>`).join('')}
+              ${wkCatOptions(w.cat)}
             </select>
           </div>
         </div>
