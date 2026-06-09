@@ -254,6 +254,16 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans','Hiragino Sans
 .cal-dots{display:flex;flex-wrap:wrap;gap:1px;}
 .cal-icon{font-size:10px;line-height:1.2;border-left:2px solid;padding-left:2px;}
 .fam-add-form{background:var(--surface);border-radius:12px;border:1px solid #9b5de5;padding:14px;}
+.fam-list-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border-radius:10px;margin-bottom:6px;border:1px solid var(--border);}
+.fam-list-bar{width:4px;height:36px;border-radius:2px;flex-shrink:0;}
+.fam-list-icon{font-size:18px;flex-shrink:0;width:28px;text-align:center;}
+.fam-list-info{flex:1;min-width:0;}
+.fam-list-who{font-size:11px;font-weight:600;letter-spacing:.04em;}
+.fam-list-cat{font-size:14px;font-weight:500;color:var(--text);}
+.fam-list-time{font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);margin-left:6px;}
+.fam-list-note{font-size:12px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fam-list-btns{display:flex;gap:4px;flex-shrink:0;}
+
 .fam-view-toggle{display:flex;gap:4px;margin-left:auto;}
 .fvt-btn{width:32px;height:32px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .fvt-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
@@ -576,7 +586,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans','Hiragino Sans
         </div>
         <div style="flex:1">
           <div class="ilabel">カテゴリ</div>
-          <select class="iinput" id="famCat" style="padding:9px 8px">
+          <select class="iinput" id="famCat" style="padding:9px 8px" onchange="onFamCatChange('famCat','famTime')">
             <option value="nobento">弁当なし</option>
             <option value="baito">バイト</option>
             <option value="kaigi">会議</option>
@@ -622,7 +632,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans','Hiragino Sans
             <option value="papa">パパ</option>
             <option value="yuka">優花</option>
           </select>
-          <select class="iinput" id="fiCat" style="flex:1;padding:8px">
+          <select class="iinput" id="fiCat" style="flex:1;padding:8px" onchange="onFamCatChange('fiCat','fiTime')">
             <option value="nobento">弁当なし</option>
             <option value="baito">バイト</option>
             <option value="kaigi">会議</option>
@@ -1624,6 +1634,15 @@ function famNextMonth(){
   if(famViewMode==='list') renderFamList();
 }
 
+
+// カテゴリ変更で時刻のデフォルトを変える
+function onFamCatChange(selId, timeId){
+  const cat = document.getElementById(selId)?.value;
+  const timeEl = document.getElementById(timeId);
+  if(!timeEl) return;
+  if(cat==='baito' && !timeEl.value) timeEl.value = '18:00';
+}
+
 function addFamEvent(){
   const person = document.getElementById('famPerson').value;
   const cat    = document.getElementById('famCat').value;
@@ -1890,7 +1909,6 @@ function switchFamView(mode){
 
 function renderFamList(){
   const todayStr = today();
-  // 表示月の全日付を生成
   const daysInMonth = new Date(famViewYear, famViewMonth+1, 0).getDate();
   const container = document.getElementById('famListContent');
   container.innerHTML = '';
@@ -1914,11 +1932,44 @@ function renderFamList(){
       + (isToday?'<span class="fam-list-today-badge">今日</span>':'')
       + '</div>';
     container.appendChild(dayDiv);
-    dayEvs.forEach(e=>{
-      const timeStr = e.time ? e.time+' ' : '';
-      return '<div class="fam-event-row" style="margin-bottom:6px">'
-        +'<div class="fam-event-dot" style="background:'+FAM_COLOR[e.person]+'"></div>'
-    });  
+
+    dayEvs.forEach(function(e){
+      const timeStr = e.time || '';
+      const row = document.createElement('div');
+      row.className = 'fam-list-row';
+      // 左カラー帯
+      const bar = document.createElement('div');
+      bar.className = 'fam-list-bar';
+      bar.style.background = FAM_COLOR[e.person];
+      // アイコン
+      const icon = document.createElement('div');
+      icon.className = 'fam-list-icon';
+      icon.textContent = FAM_ICON[e.cat];
+      // 情報
+      const info = document.createElement('div');
+      info.className = 'fam-list-info';
+      info.innerHTML = '<div class="fam-list-who" style="color:'+FAM_COLOR[e.person]+'">'+FAM_PERSON[e.person]+'</div>'
+        + '<div class="fam-list-cat">'+FAM_CAT[e.cat]+(timeStr?' <span class="fam-list-time">'+timeStr+'</span>':'')+'</div>'
+        + (e.note?'<div class="fam-list-note">'+esc(e.note)+'</div>':'');
+      // ボタン群
+      const btns = document.createElement('div');
+      btns.className = 'fam-list-btns';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      editBtn.textContent = '✏️';
+      editBtn.addEventListener('click', (function(eid,dstr){return function(){startFamEditFromList(eid,dstr);};})(e.id,ds));
+      const delBtn = document.createElement('button');
+      delBtn.className = 'fam-event-del';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', (function(eid){return function(){delFamEventFromList(eid);};})(e.id));
+      btns.appendChild(editBtn);
+      btns.appendChild(delBtn);
+      row.appendChild(bar);
+      row.appendChild(icon);
+      row.appendChild(info);
+      row.appendChild(btns);
+      dayDiv.appendChild(row);
+    });
   }
 
   if(!hasAny){
