@@ -383,7 +383,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans','Hiragino Sans
     <div class="section">
       <div class="sec-hdr">
         <div class="sec-title">タスク一覧</div>
-        <button class="add-btn-sm" onclick="toggleMorningForm()">＋ 追加</button>
+        <div style="display:flex;gap:6px">
+          <button class="add-btn-sm" style="background:#fde8df;color:#c1440e" onclick="resetMorningTasks()">↺ リセット</button>
+          <button class="add-btn-sm" style="background:#f0eeff;color:#7c6af7" onclick="resetToDefaultTasks()">初期化</button>
+          <button class="add-btn-sm" onclick="toggleMorningForm()">＋ 追加</button>
+        </div>
       </div>
       <div class="morning-add-form" id="morningAddForm">
         <div class="maf-row">
@@ -726,13 +730,13 @@ function switchTab(tab){
 
 // ===== MORNING =====
 let tasks=[
-  {id:1,name:'洗濯',min:60,checked:true,running:false,startedAt:null,doneAt:null},
-  {id:2,name:'ゴミ出し',min:10,checked:true,running:false,startedAt:null,doneAt:null},
-  {id:3,name:'庭の水やり',min:15,checked:true,running:false,startedAt:null,doneAt:null},
-  {id:4,name:'掃除機',min:10,checked:true,running:false,startedAt:null,doneAt:null},
-  {id:5,name:'朝食の片付け',min:15,checked:true,running:false,startedAt:null,doneAt:null},
-  {id:6,name:'メイク',min:15,checked:true,running:false,startedAt:null,doneAt:null},
-  {id:7,name:'お弁当',min:30,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:1,name:'お弁当',min:30,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:2,name:'メイク',min:15,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:3,name:'洗濯干す',min:15,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:4,name:'ゴミ出し',min:10,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:5,name:'猫トイレ掃除',min:10,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:6,name:'庭の水やり',min:15,checked:true,running:false,startedAt:null,doneAt:null},
+  {id:7,name:'掃除機',min:10,checked:true,running:false,startedAt:null,doneAt:null},
 ];
 let taskId=10,mafOpen=false,editMinId=null;
 
@@ -1988,6 +1992,49 @@ function startFamEditFromList(id, ds){
   // 該当日のシートを開いて編集モードに
   openFamDay(ds);
   setTimeout(()=>{ window._editingFamId=id; renderFamDayList(ds,'famDayList'); }, 50);
+}
+
+
+// ===== 朝タスク リセット =====
+const DEFAULT_TASKS = [
+  {name:'お弁当',    min:30},
+  {name:'メイク',    min:15},
+  {name:'洗濯干す',  min:15},
+  {name:'ゴミ出し',  min:10},
+  {name:'猫トイレ掃除',min:10},
+  {name:'庭の水やり',min:15},
+  {name:'掃除機',    min:10},
+];
+
+function resetMorningTasks(){
+  const doneCount = tasks.filter(t=>t.doneAt).length;
+  if(doneCount === 0){ alert('完了済みのタスクがありません'); return; }
+  if(!confirm(doneCount+'件の完了状態をリセットしますか？\nタスクの内容・分数はそのまま残ります。')){ return; }
+  tasks.forEach(t=>{
+    t.doneAt = null;
+    t.running = false;
+    t.startedAt = null;
+    t.checked = true;
+    t._w = false;
+    t._ac = false;
+  });
+  forgetShown = false;
+  saveData();
+  renderMorning();
+  showBanner('↺ タスクをリセットしました', 'ok');
+}
+
+function resetToDefaultTasks(){
+  if(!confirm('タスクを初期リストに戻しますか？\n現在のタスクはすべて置き換えられます。')) return;
+  taskId = 10;
+  tasks = DEFAULT_TASKS.map((t,i)=>({
+    id:++taskId, name:t.name, min:t.min,
+    checked:true, running:false, startedAt:null, doneAt:null
+  }));
+  forgetShown = false;
+  saveData();
+  renderMorning();
+  showBanner('↺ 初期リストに戻しました', 'ok');
 }
 
 // ===== INIT =====
